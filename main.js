@@ -66,7 +66,7 @@ function process_song(name, link) {
       populateTable({
         name: name,
         duration: Math.round(data.duration_ms / 1000),
-        tempo: data.tempo,
+        tempo: Math.round(data.tempo),
         danceability: data.danceability,
       });
     })
@@ -187,12 +187,12 @@ function sort_table(n) {
       y = rows[i + 1].getElementsByTagName("TD")[n];
 
       if (dir === "asc") {
-        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+        if (Number(x.innerHTML.toLowerCase()) > Number(y.innerHTML.toLowerCase())) {
           shouldSwitch = true;
           break;
         }
       } else if (dir === "desc") {
-        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+        if (Number(x.innerHTML.toLowerCase()) < Number(y.innerHTML.toLowerCase())) {
           shouldSwitch = true;
           break;
         }
