@@ -25,7 +25,7 @@ const stateKey = 'spotify_auth_state';
 
 function authenticate() {
   var client_id = 'd1aa8bf4846d46e985716baba01bf0ca';
-  var redirect_uri = 'http://localhost:8888/';
+  var redirect_uri = 'https://g3rrit.github.io/spotify-playlist-analyzer/';
 
   var scope = 'user-read-private';
 
