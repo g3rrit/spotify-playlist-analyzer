@@ -1,5 +1,6 @@
 
 spotify_token = null;
+rate_limited = false
 
 function getRandomBase64String(length) {
   const array = new Uint8Array(length);
@@ -57,15 +58,22 @@ function process_song(name, link) {
     }
   }).then(response => response.json())
     .then(data => {
+      if (data.error) {
+        console.log("Error while retriving song data");
+        rate_limited = true;
+        return;
+      }
       populateTable({
         name: name,
         duration: Math.round(data.duration_ms / 1000),
         tempo: data.tempo,
         danceability: data.danceability,
-      }
-      );
+      });
     })
-    .catch(error => console.error('Error while retriving playlist:', error));
+    .catch(error => {
+      rate_limited = true
+      console.error('Error while retriving playlist:', error)
+    });
 }
 
 function sleep(ms) {
@@ -84,6 +92,11 @@ function process_playlist(link, wait=false) {
         wait = true
       }
       for (const item of data.items) {
+        if (rate_limited) {
+          errorPopup("Rate limited, please wait a minute or two...");
+          return;
+        }
+
         if (wait = true) {
           await sleep(400);
         }
@@ -93,7 +106,10 @@ function process_playlist(link, wait=false) {
         process_playlist(data.next, wait);
       }
     })
-    .catch(error => console.error('Error while retriving playlist:', error));
+    .catch(error => {
+      rate_limited = true;
+      console.error('Error while retriving playlist:', error)
+    });
 }
 
 function check_playlist() {
@@ -102,6 +118,7 @@ function check_playlist() {
     var url = new URL(playlist_id);
     playlist_id = url.pathname.split('/')[2];
   }
+  console.log(playlist_id);
 
   if (spotify_token == null) {
     errorPopup("Not authenticated");
@@ -138,6 +155,14 @@ function init() {
     checkButton.disabled = true;
     topButton.style.display = 'block';
   }
+
+  setInterval(function() {
+    if (rate_limited) {
+      setTimeout(function() {
+        rate_limited = false;
+      }, 60000);
+    }
+  }, 60000)
 }
 
 function populateTable(item) {
