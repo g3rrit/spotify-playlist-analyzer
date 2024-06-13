@@ -26,6 +26,7 @@ const stateKey = 'spotify_auth_state';
 function authenticate() {
   var client_id = 'd1aa8bf4846d46e985716baba01bf0ca';
   var redirect_uri = 'https://g3rrit.github.io/spotify-playlist-analyzer/';
+  //var redirect_uri = 'http://localhost:8888/';
 
   var scope = 'user-read-private';
 
@@ -71,7 +72,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function process_playlist(link) {
+function process_playlist(link, wait=false) {
   fetch(link, {
     method: 'GET',
     headers: {
@@ -79,12 +80,17 @@ function process_playlist(link) {
     }
   }).then(response => response.json())
     .then(async data => {
+      if (data.length > 60) {
+        wait = true
+      }
       for (const item of data.items) {
-        await sleep(20);
+        if (wait = true) {
+          await sleep(400);
+        }
         process_song(item.track.name, 'https://api.spotify.com/v1/audio-features/' + item.track.id);
       }
       if (data.next != null) {
-        process_playlist(data.next);
+        process_playlist(data.next, wait);
       }
     })
     .catch(error => console.error('Error while retriving playlist:', error));
@@ -92,7 +98,10 @@ function process_playlist(link) {
 
 function check_playlist() {
   var playlist_id = document.getElementById("textInput").value;
-  console.log(textInput);
+  if (playlist_id.startsWith('http')) {
+    var url = new URL(playlist_id);
+    playlist_id = url.pathname.split('/')[2];
+  }
 
   if (spotify_token == null) {
     errorPopup("Not authenticated");
@@ -106,7 +115,6 @@ function check_playlist() {
 
 function init() {
   hash_params = get_hash_params();
-  console.log(hash_params);
 
   authenticated = false;
 
