@@ -25,7 +25,7 @@ function get_hash_params() {
 const stateKey = 'spotify_auth_state';
 
 function authenticate() {
-  var client_id = 'd1aa8bf4846d46e985716baba01bf0ca';
+  var client_id = 'ef0ce806f4b74ae9808df4c5d53cecda';
   var redirect_uri = 'https://g3rrit.github.io/spotify-playlist-analyzer/';
   //var redirect_uri = 'http://localhost:8888/';
 
@@ -80,7 +80,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function process_playlist(link, wait=false) {
+function process_playlist(link, wait_r=false) {
   fetch(link, {
     method: 'GET',
     headers: {
@@ -88,8 +88,8 @@ function process_playlist(link, wait=false) {
     }
   }).then(response => response.json())
     .then(async data => {
-      if (data.length > 60) {
-        wait = true
+      if (data.total > 40) {
+        wait_r = true
       }
       for (const item of data.items) {
         if (rate_limited) {
@@ -97,13 +97,13 @@ function process_playlist(link, wait=false) {
           return;
         }
 
-        if (wait = true) {
-          await sleep(400);
+        if (wait_r) {
+          await sleep(500);
         }
         process_song(item.track.name, 'https://api.spotify.com/v1/audio-features/' + item.track.id);
       }
       if (data.next != null) {
-        process_playlist(data.next, wait);
+        process_playlist(data.next, wait_r);
       }
     })
     .catch(error => {
@@ -118,7 +118,6 @@ function check_playlist() {
     var url = new URL(playlist_id);
     playlist_id = url.pathname.split('/')[2];
   }
-  console.log(playlist_id);
 
   if (spotify_token == null) {
     errorPopup("Not authenticated");
