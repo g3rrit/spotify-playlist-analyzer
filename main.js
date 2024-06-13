@@ -1,5 +1,5 @@
 
-spotify_token = null
+spotify_token = null;
 
 function getRandomBase64String(length) {
   const array = new Uint8Array(length);
@@ -80,11 +80,11 @@ function process_playlist(link) {
   }).then(response => response.json())
     .then(async data => {
       for (const item of data.items) {
-        await sleep(20)
-        process_song(item.track.name, 'https://api.spotify.com/v1/audio-features/' + item.track.id)
+        await sleep(20);
+        process_song(item.track.name, 'https://api.spotify.com/v1/audio-features/' + item.track.id);
       }
       if (data.next != null) {
-        process_playlist(data.next)
+        process_playlist(data.next);
       }
     })
     .catch(error => console.error('Error while retriving playlist:', error));
@@ -96,37 +96,39 @@ function check_playlist() {
 
   if (spotify_token == null) {
     errorPopup("Not authenticated");
-    return
+    return;
   }
 
   const tableBody = document.querySelector('#data-table tbody');
   tableBody.innerHTML = '';
-  process_playlist('https://api.spotify.com/v1/playlists/' + playlist_id + '/tracks')
+  process_playlist('https://api.spotify.com/v1/playlists/' + playlist_id + '/tracks');
 }
 
 function init() {
   hash_params = get_hash_params();
   console.log(hash_params);
 
-  authenticated = false
+  authenticated = false;
 
   var topButton = document.getElementById('topButton');
   var checkButton = document.getElementById('checkButton');
 
   if ("access_token" in hash_params) {
-    authenticated = true
-    spotify_token = hash_params["access_token"]
+    authenticated = true;
+    spotify_token = hash_params["access_token"];
   } else {
-    authenticated = false
-    spotify_token = null
+    authenticated = false;
+    spotify_token = null;
   }
 
   if (authenticated) {
     topButton.disabled = true;
+    topButton.style.display = 'none';
     checkButton.disabled = false;
   } else {
     topButton.disabled = false;
     checkButton.disabled = true;
+    topButton.style.display = 'block';
   }
 }
 
