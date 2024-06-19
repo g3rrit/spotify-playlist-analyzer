@@ -1,43 +1,51 @@
 
-spotify_token = null;
-rate_limited = false
+const clientId = "ef0ce806f4b74ae9808df4c5d53cecda";
+var spotify_token = null;
+var rate_limited = false
+var redirectUri = "https://g3rrit.github.io/spotify-playlist-analyzer/";
+//const redirectUri = "http://localhost:8888/";
 
-function getRandomBase64String(length) {
-  const array = new Uint8Array(length);
-  window.crypto.getRandomValues(array);
-  const base64String = btoa(String.fromCharCode.apply(null, array));
-  return base64String.substring(0, length);
+
+function generateRandomString(length) {
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const values = crypto.getRandomValues(new Uint8Array(length));
+  return values.reduce((acc, x) => acc + possible[x % possible.length], "");
 }
 
-function get_hash_params() {
-  var hash = window.location.hash.substring(1);
-  if (hash == null || hash == '') {
-    return {}
+function sha256(plain) {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(plain)
+  return window.crypto.subtle.digest('SHA-256', data)
+}
+
+function base64urlencode(a) {
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(a)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function authenticate() {
+  const scope = "user-read-private";
+
+  const authUrl = new URL("https://accounts.spotify.com/authorize")
+
+  const codeVerifier  = generateRandomString(64);
+  const hashed = await sha256(codeVerifier)
+  const codeChallenge = base64urlencode(hashed);
+
+  // generated in the previous step
+  window.localStorage.setItem("code_verifier", codeVerifier);
+
+  const params =  {
+    response_type: "code",
+    client_id: clientId,
+    scope,
+    code_challenge_method: "S256",
+    code_challenge: codeChallenge,
+    redirect_uri: redirectUri,
   }
 
-  return hash.split('&').reduce(function (res, item) {
-    var parts = item.split('=');
-    res[parts[0]] = parts[1];
-    return res;
-  }, {});
-}
-
-const stateKey = 'spotify_auth_state';
-
-function authenticate() {
-  var client_id = 'ef0ce806f4b74ae9808df4c5d53cecda';
-  var redirect_uri = 'https://g3rrit.github.io/spotify-playlist-analyzer/';
-  //var redirect_uri = 'http://localhost:8888/';
-
-  var scope = 'user-read-private';
-
-  var url = 'https://accounts.spotify.com/authorize';
-  url += '?response_type=token';
-  url += '&client_id=' + encodeURIComponent(client_id);
-  url += '&scope=' + encodeURIComponent(scope);
-  url += '&redirect_uri=' + encodeURIComponent(redirect_uri);
-
-  window.location.href = url
+  authUrl.search = new URLSearchParams(params).toString();
+  window.location.href = authUrl.toString();
 }
 
 function errorPopup(msg) {
@@ -130,29 +138,48 @@ function check_playlist() {
 }
 
 function init() {
-  hash_params = get_hash_params();
-
-  authenticated = false;
-
   var topButton = document.getElementById('topButton');
   var checkButton = document.getElementById('checkButton');
 
-  if ("access_token" in hash_params) {
-    authenticated = true;
-    spotify_token = hash_params["access_token"];
-  } else {
-    authenticated = false;
-    spotify_token = null;
-  }
+  const urlParams = new URLSearchParams(window.location.search);
+  let code = urlParams.get('code');
 
-  if (authenticated) {
-    topButton.disabled = true;
-    topButton.style.display = 'none';
-    checkButton.disabled = false;
-  } else {
+  if (code == null) {
+    localStorage.clear(); // not needed but cleaning up is always nice
     topButton.disabled = false;
     checkButton.disabled = true;
     topButton.style.display = 'block';
+  } else {
+    topButton.disabled = true;
+    topButton.style.display = 'none';
+    // enable chek button after we get the actual token
+
+    let codeVerifier = localStorage.getItem('code_verifier');
+
+    if (codeVerifier == null) {
+      errorPopup("ERROR - Please reload");
+    }
+
+    const payload = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: clientId,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        code_verifier: codeVerifier,
+      }),
+    }
+
+    fetch("https://accounts.spotify.com/api/token", payload).then(response => response.json()).then(data => {
+      spotify_token = data.access_token;
+      checkButton.disabled = false;
+    }).catch(error => {
+      console.error('Error while retriving token:', error)
+    });
   }
 
   setInterval(function() {

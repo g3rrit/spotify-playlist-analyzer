@@ -91,13 +91,13 @@
 </head>
 
 <body>
-  <button id="topButton" onclick="authenticate()">Authenticate</button>
+  <button id="topButton" onclick="authenticate()" disabled>Authenticate</button>
   <div class="container">
   </div>
   <div id="popup"></div>
   <div class="container">
     <input type="text" id="textInput" placeholder="Enter a spotify playlist ID or link... (Example: 5tlCN38iA4dNuBLmNqKz5A)">
-    <button id="checkButton" onclick="check_playlist()">Check</button>
+    <button id="checkButton" onclick="check_playlist()" disabled>Check</button>
     <table id="data-table">
       <thead>
         <tr>
